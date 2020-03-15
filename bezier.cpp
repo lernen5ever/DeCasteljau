@@ -9,6 +9,13 @@
 #include "bezier.h"
 #include "vec2d.h"
 
+#define TIME_SYNC
+
+#ifdef TIME_SYNC
+  using std::chrono::steady_clock;
+  using std::chrono::milliseconds;
+  using std::this_thread::sleep_for;
+#endif
 using std::function;
 using std::numeric_limits;
 using std::vector;
@@ -30,8 +37,17 @@ vec2d Bezier::Interpolate(double t) const {
 
 void Bezier::Simulate(uint32_t MillisecsWhole, uint32_t MillisecsInterval,
                       function<void(uint32_t, vec2d)> callback) const {
-
+#ifdef TIME_SYNC
+  auto EntryTime = steady_clock::now();
+#endif
   for (uint32_t t = 0; t <= MillisecsWhole; t += MillisecsInterval) {
+#ifdef TIME_SYNC
+    auto SleepTo = EntryTime + milliseconds(t);
+    auto Current = steady_clock::now();
+    if (SleepTo > Current) {
+      sleep_for(SleepTo - Current);
+    }
+#endif
     callback(t, Interpolate(double(t) / MillisecsWhole));
   }
 }
